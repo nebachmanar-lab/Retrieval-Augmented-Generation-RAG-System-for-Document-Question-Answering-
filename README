@@ -1,0 +1,35 @@
+Project Overview
+This project implements and evaluates a Retrieval-Augmented Generation (RAG) system for PDF documents. It includes a complete evaluation pipeline testing different embedding models, chunking strategies, and LLMs, plus an industrialised Streamlit web application for document Q&A.
+
+Key RAG Parameters
+The system uses optimised parameters from the evaluation phase. Chunk size is set to 400 characters with an overlap of 16 characters to maintain context while ensuring retrieval precision. The retriever fetches 5 chunks per query (k=5). Text splitting uses intelligent separators in priority order: double newlines for paragraphs, single newlines for lines, spaces for words, and finally characters as fallback.
+
+Embedding Models Tested
+Four embedding models were evaluated. The lightweight thenlper/gte-small produces 384-dimensional vectors and offers a good speed-accuracy trade-off. The high-precision thenlper/gte-large uses 1024 dimensions but is significantly slower. The fast sentence-transformers/all-MiniLM-L6-v2 is optimised for speed with 384 dimensions. For French/English documents, sentence-transformers/paraphrase-multilingual-mpnet-base-v2 provides multilingual support.
+
+LLM Models Used
+Two inference backends are supported. Ollama runs models locally including gemma3, llama3, and mistral. OpenRouter provides cloud-based access to models like arcee-ai/trinity-large-preview:free (free tier) and nvidia/llama-3.1-nemotron-70b-instruct (paid).
+
+Evaluation Methodology
+Answers are scored on a scale of 1 to 5. A score of 5 means very faithful, identical or exact paraphrase. A score of 4 indicates correct with main information present. A score of 3 means partial but missing important details. A score of 2 is weak with approximate or off-topic information. A score of 1 is incorrect or completely wrong.
+
+Two evaluation methods are implemented. The LLM-based scoring uses a judge model (Gemma3 or NVIDIA Nemotron) to rate each answer. The embedding-based scoring calculates cosine similarity between reference and generated answer embeddings, then maps similarity thresholds (0.9+ for score 5, 0.8+ for score 4, 0.7+ for score 3, 0.6+ for score 2, below for score 1).
+
+Installation
+Install the required dependencies: langchain and langchain-community for document processing, langchain-chroma and langchain-pinecone for vector stores, pypdf for PDF loading, sentence-transformers for embeddings, chromadb as the local vector database, ollama and openai for LLM inference, streamlit for the web interface, and scikit-learn with numpy for evaluation metrics.
+
+Usage
+To run the evaluation notebook, execute RAG.ipynb which will index PDF files from ../file1.pdf, ../file2.pdf, and ../file3.pdf, test all embedding models, generate answers using Ollama or OpenRouter, and score the results against the reference dataset.
+
+To launch the Streamlit application, run streamlit run app.py. The sidebar allows uploading PDF documents, switching between Chroma (local) and Pinecone (cloud) vector stores, selecting the LLM model (gemma3, llama3, or mistral), and deleting all indexed documents. The main area accepts questions and displays answers along with the retrieved context and source chunks. A batch evaluation button tests all questions from questionSource.json and saves results to questionResults_app.json.
+
+File Descriptions
+RAG.ipynb contains the complete evaluation workflow including PDF loading, chunking with RecursiveCharacterTextSplitter, embedding model testing across five variants, answer generation via Ollama and OpenRouter, and scoring using both LLM judges and cosine similarity.
+
+rag_pipeline.py defines the RAGPipeline class with methods for indexing documents (index_documents), deleting all documents (delete_all_documents), and querying with context retrieval (query). The class uses @st.cache_resource to cache the embedding model across Streamlit sessions.
+
+app.py is the Streamlit user interface that imports RAGPipeline, manages session state for the pipeline instance, handles file uploads with temporary files, displays answers with expandable context and source sections, and provides batch evaluation functionality.
+
+questionSource.json stores the reference dataset structured as a list of documents, each containing a document name and a list of qa_pairs with question and answer fields. This file contains 30 total questions used for evaluation.
+
+embedding_comparison.json stores the results of embedding model comparison including average scores, individual question scores, and processing time in seconds for each tested model.
